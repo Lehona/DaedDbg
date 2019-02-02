@@ -13,7 +13,7 @@ def PrintCurrTokens(amount):
 	
 def PrintToken(tok, param, offset, is_current=False):
 	global TokenNames
-	offsetStr = '0x%06x' % offset
+	offsetStr = '0x%06x' % (offset & 0xFFFFFFFF)
 
 	if is_current:
 		prefix = " => "

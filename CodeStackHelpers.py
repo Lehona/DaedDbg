@@ -1,12 +1,11 @@
 import gdb
 import struct
 
-DoDebug = True
+DoDebug = False
 
 def Debug(string):
 	global DoDebug
-	if False:
-		print("Debug was true")
+	if DoDebug:
 		print(string)
 		
 
@@ -15,24 +14,18 @@ def uhex(nr):
 
 
 def ReadByte(ptr):
-	Debug("Reading byte at address: " + uhex(ptr))
 	buffer = gdb.selected_inferior().read_memory(ptr, 1)
 	result = struct.unpack('b', buffer)[0]
-	Debug("The result is: " + uhex(result))
 	return result
 	
 def ReadInt(ptr):
-	Debug("Reading int at address: " + uhex(ptr))
 	buffer = gdb.selected_inferior().read_memory(ptr, 4)
 	result = struct.unpack('l', buffer)[0]
-	Debug("The result is: " + uhex(result))
 	return result	
 
 def ReadString(ptr, length):
-	Debug("Reading CString at address: " + uhex(ptr) + " with length " + uhex(length))
 	buffer = gdb.selected_inferior().read_memory(ptr, length)
 	result = str(buffer)
-	Debug("The result is: " + result)
 	return result
 	
 	

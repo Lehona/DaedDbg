@@ -25,7 +25,7 @@ def Main():
 	
 	DecoderBP = InstrDecoderBP("*" + hex(PopInstrEa))
 
-	print("Sucessfully installed Breakpoint for Instruction Decoding. Continuing now to the first Instruction hit.")
+	print("Sucessfully installed Breakpoint for Instruction Decoding. Continuing now to the first instruction.")
 	CurrentMode = Modes.StepInto
 	
 def InitGlobals():
@@ -36,6 +36,7 @@ def InitGlobals():
 	CurrentFuncId = None
 	InitSymbTable()
 	InitFuncList()
+	InitSymbNameList()
 	
 class DaedalusStepPrefixCmd(gdb.Command):
 	"""A prefix for all stepping commands of the DaedDbg gdb script"""
@@ -93,19 +94,51 @@ class StepReturnCmd(gdb.Command):
 StepReturnCmd()
 
 class BreakCmd(gdb.Command):
-	"""This command adds a daedalus breakpoint. Currently only supports offsets"""
+	"""This command adds a daedalus breakpoint. Supports offset qualified with * and function names"""
 	
 	def __init__ (self):
 		super (BreakCmd, self).__init__("dbreak", gdb.COMMAND_OBSCURE)
 
 	def invoke(slf, args, from_tty):
-		if "0x" in args:
-			offset = int(args, 16)
-		else:
-			offset = int(args)
+		if args.startswith("*"):
+			if "0x" in args:
+				offset = int(args[1:], 16)
+			else:
+				offset = int(args[1:])
+		else: 
+			upper = args.strip().upper()
+			
+			# This has to be one of the weirdest bugs I have ever encountered
+			# For some reason GetSymbIdByName fails to find functions that begin with a Z when called here
+			# But when calling it from python directly, e.g. 'python print(GetSymbIdByName("ZS_GHOST"))'
+			# it works perfectly fine. Even looking at the byte arrays of the string passed as argument
+			# and a hardcoded string returns the same bytes. However, after a lot of trial and error
+			# just calling str() on it fixes the issue and I get my sanity back.
+			symbID = GetSymbIdByName(str(upper))
+			Debug("Looking for symbol |" + upper + "| and found ID: " + str(symbID))
+			offset = GetSymbTable()[symbID].content
+			Debug("Found offset: " + str(offset))
 		BreakpointList.append(offset)
 		
+		print("Installed breakpoint with ID " + str(len(BreakpointList)-1) + " at offset " + uhex(offset) + " in function " + GetFuncNameByOffset(offset))
+		
 BreakCmd()
+
+
+class ShowBreaksCmd(gdb.Command):
+	"""Prints all currently active daedalus breakpoints and in which function they are installed"""
+	
+	def __init__ (self):
+		super (ShowBreaksCmd, self).__init__("dibreaks", gdb.COMMAND_OBSCURE)
+
+	def invoke(slf, args, from_tty):
+		ctr = 0
+		# TODO: Formatting
+		for bp in BreakpointList:
+			print(str(ctr) + " " + GetFuncNameByOffset(bp) + " " + uhex(bp))
+			ctr += 1
+		
+ShowBreaksCmd()
 
 class PrintCurrentFunctionCmd(gdb.Command):
 	"""Prints the currently executed daedalus function"""
@@ -117,6 +150,18 @@ class PrintCurrentFunctionCmd(gdb.Command):
 		PrintCurrFuncName()
 		
 PrintCurrentFunctionCmd()
+
+class ExamineVariableCmd(gdb.Command):
+	"""Prints the value of a daedalus variable"""
+	
+	def __init__ (self):
+		super (ExamineVariableCmd, self).__init__("dx", gdb.COMMAND_OBSCURE)
+
+	def invoke(slf, args, from_tty):
+		id = GetSymbIdByName(args.upper())
+		print(GetSymbTable()[id].content)
+		
+ExamineVariableCmd()
  
  
 class InstrDecoderBP(gdb.Breakpoint):
@@ -133,10 +178,12 @@ class InstrDecoderBP(gdb.Breakpoint):
 			
 		currOffset = GetCurrParserStackOffset()
 			
+		
+		# DISABLED FOR NOW (SHOULD WORK FINE)
 		# Step over instructions that were not in the original codestack
-		if currOffset > GetParserStackSize() or currOffset < 0:
-			Debug("Hit BP for instruction outside of codestack")
-			return False
+		# if currOffset > GetParserStackSize() or currOffset < 0:
+			# Debug("Hit BP for instruction outside of codestack")
+			# return False
 			
 		InstrByte = GetNextToken()
 					

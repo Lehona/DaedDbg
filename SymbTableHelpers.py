@@ -79,6 +79,22 @@ def GetSymbTable():
 		InitSymbTable()
 		
 	return SymbTable
+	
+# List of all symbols sorted by name (for faster searching)
+
+def InitSymbNameList():
+	global SymbolNameList
+	
+	SymbolNameList = SortedCollection(key=lambda id: SymbTable[id].name)
+	for i in range(GetSymbTableLength()):
+		SymbolNameList.insert(i)
+		
+def GetSymbIdByName(name):
+	global SymbolNameList
+	try:
+		return SymbolNameList.find(name)
+	except ValueError:
+		return None
 		
 # List of all functions (for faster searching)
 def InitFuncList():
@@ -96,9 +112,16 @@ def GetFuncIdByOffset(offset):
 		return None
 
 		
-def PrintFuncNameByOffset(offset):
+def GetFuncNameByOffset(offset):
 	id = GetFuncIdByOffset(offset)
-	print(SymbTable[id].name)
+	if id is None:
+		return "[UNKNOWN]"
+	else:
+		return GetSymbTable()[id].name
+	
+def PrintFuncNameByOffset(offset):
+	name = GetFuncNameByOffset(offset)
+	print(name)
 	
 def PrintCurrFuncName():
 	offset = GetCurrParserStackOffset()
