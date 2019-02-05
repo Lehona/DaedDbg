@@ -10,13 +10,13 @@ def Debug(string):
 		
 
 def uhex(nr):
-	return hex(nr & 0xffffffff)
+	return "0x%x" % (nr & 0xffffffff)
 
 
 def ReadByte(ptr):
 	buffer = gdb.selected_inferior().read_memory(ptr, 1)
 	result = struct.unpack('b', buffer)[0]
-	return result
+	return result & 0xFF
 	
 def ReadInt(ptr):
 	buffer = gdb.selected_inferior().read_memory(ptr, 4)
