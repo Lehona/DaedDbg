@@ -29,11 +29,12 @@ def Main():
 	CurrentMode = Modes.StepInto
 	
 def InitGlobals():
-	global BreakpointList, InternalBreakpoints, CurrentMode, CurrentFuncId
+	global BreakpointList, InternalBreakpoints, CurrentMode, CurrentFuncId, TokenPrintAmount
 	BreakpointList = []
 	InternalBreakpoints = []
 	CurrentMode = Modes.Nothing
 	CurrentFuncId = None
+	TokenPrintAmount = 6
 	InitSymbTable()
 	InitFuncList()
 	InitSymbNameList()
@@ -93,6 +94,37 @@ class StepReturnCmd(gdb.Command):
 		
 StepReturnCmd()
 
+class DaedalusConfigurePrefixCmd(gdb.Command):
+	"""A prefix for all commands that configure something within the DaedDbg scripts"""
+
+	def __init__ (self):
+		super (DaedalusConfigurePrefixCmd, self).__init__("doption", gdb.COMMAND_OBSCURE, prefix=True)
+
+	def invoke(slf, args, from_tty):
+		pass
+
+DaedalusConfigurePrefixCmd()
+
+class SetPrintTokenAmountCmd(gdb.Command):
+	"""This command steps a single daedalus instruction and displays the current tokens"""
+	
+	def __init__ (self):
+		super (SetPrintTokenAmountCmd, self).__init__("doption tokens", gdb.COMMAND_OBSCURE)
+
+	def invoke(slf, args, from_tty):
+		global TokenPrintAmount
+		args = args.strip()
+		
+		if args == "":
+			print("You forgot to specify the amount of tokens to print!")
+			return
+		
+		amount = int(args)
+		TokenPrintAmount = amount
+		
+		
+SetPrintTokenAmountCmd()
+
 class BreakCmd(gdb.Command):
 	"""This command adds a daedalus breakpoint. Supports offset qualified with * and function names"""
 	
@@ -100,6 +132,7 @@ class BreakCmd(gdb.Command):
 		super (BreakCmd, self).__init__("dbreak", gdb.COMMAND_OBSCURE)
 
 	def invoke(slf, args, from_tty):
+		global BreakpointList
 		if args.startswith("*"):
 			if "0x" in args:
 				offset = int(args[1:], 16)
@@ -123,6 +156,35 @@ class BreakCmd(gdb.Command):
 		print("Installed breakpoint with ID " + str(len(BreakpointList)-1) + " at offset " + uhex(offset) + " in function " + GetFuncNameByOffset(offset))
 		
 BreakCmd()
+
+class DeleteBreakCmd(gdb.Command):
+	"""Delete a breakpoint using either its offset or its id (printed by the dibreaks command)"""
+	
+	def __init__ (self):
+		super (DeleteBreakCmd, self).__init__("ddelete", gdb.COMMAND_OBSCURE)
+
+	def invoke(slf, args, from_tty):
+		if args.startswith("*"):
+			if "0x" in args:
+				offset = int(args[1:], 16)
+			else:
+				offset = int(args[1:])
+				
+			try:
+				BreakpointList.remove(offset)
+			except: 
+				print("Unable to remove breakpoint with offset " + uhex(offset) + ". Did you make a typo?")
+				
+		else:
+			try:
+				index = int(args)
+				del BreakpointList[index]
+			except IndexError:
+				print("Unable to remove breakpoint due to invalid index.")
+			except ValueError:
+				print("Specified invalid index. The index must be an integer! Did you maybe forget an * to indicate offsets?")
+				
+DeleteBreakCmd()
 
 
 class ShowBreaksCmd(gdb.Command):
@@ -158,7 +220,7 @@ class ExamineVariableCmd(gdb.Command):
 		super (ExamineVariableCmd, self).__init__("dx", gdb.COMMAND_OBSCURE)
 
 	def invoke(slf, args, from_tty):
-		id = GetSymbIdByName(args.upper())
+		id = GetSymbIdByName(str(args.upper()))
 		print(GetSymbTable()[id].content)
 		
 ExamineVariableCmd()
@@ -170,7 +232,7 @@ class InstrDecoderBP(gdb.Breakpoint):
 		self.silent = True
 		
 	def stop(self):
-		global BreakpointList, CurrentMode, CurrentFuncId
+		global BreakpointList, CurrentMode, CurrentFuncId, TokenPrintAmount
 		
 		# Only do anything if we're dealing with the content parser
 		if ECX() != (GetParserPtr() + 72):
@@ -212,7 +274,7 @@ class InstrDecoderBP(gdb.Breakpoint):
 				return False
 			
 		if DoBreak:
-			PrintCurrTokens(6)
+			PrintCurrTokens(TokenPrintAmount)
 			
 		CurrentMode = Modes.Nothing
 		return DoBreak
