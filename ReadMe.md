@@ -28,6 +28,8 @@ To start debugging, first start Gothic 2 and load into the game, either by start
  * A: gdb commands are prefix-aware. This means you can type any prefix instead of the whole command, as long as it is unambiguous. Examples include typing 'c' instead of 'continue' or 'dc' instead of 'dcurrentfunc'. The same is true for all partial commands (separated by spaces), e.g. 'ds i' insted of 'dstep into'. Just hitting return on an empty command line will resend the most recent command, so you can quickly single-step through tokens by typing 'ds i' once and then just continuously pressing return.
  * **Q: I'm only seeing a small part of the Daedalus bytecode, can I somehow view more?**
  * A: You can configure the amount of tokens printed via `doption tokens x`, but I recommend using [DecDat](https://forum.worldofplayers.de/forum/threads/1151032-Tool-DecDat) or [ReaDat](https://forum.worldofplayers.de/forum/threads/1101745-Tool-ReaDat) to browse the complete bytecode while debugging. They offer a much more powerful (graphical) interface than DaedDbg ever will.
+ * **Q: Sometimes one of the tokens is printed as [UNKNOWN] and no further tokens are printed, what happened?**
+ * A: Ikarus dynamically overrides part of the codestack and leaves it in an invalid state. This is not an error, but we cannot recover from this while printing. This part will never be executed anyway, so there is nothing to see there.
  
 
 
