@@ -14,8 +14,9 @@ To start debugging, first start Gothic 2 and load into the game, either by start
 ###### Commands
 * **dstep into** This command will execute a single daedalus token.
 * **dstep over** This command works just like 'dstep into', unless the next token is a zPAR_TOK_CALL (a daedalus function call), in which case execution will proceed until that function returns. This essentially treats the daedalus function as a single token.
-* **dbreak arg** This command sets a daedalus breakpoint at arg, which can either be a function name or an offset. Offsets are marked by a preceding asterisk (*), e.g. 'dbreak INIT_GLOBAL' or 'dbreak *0x123abc'. When the given location is executed, gdb will stop and let you issue further commands, e.g. inspect variables or start single-stepping through the function. 
-* **dibreaks** Using this command you can list all currently active daedalus breakpoints. The mnemonic stands for 'daedalus-info-breakpoints'. There is currently no command to delete a breakpoint. 
+* **dbreak arg** This command sets a daedalus breakpoint at arg, which can either be a function name or an offset. Offsets are marked by a preceding asterisk (*), e.g. `dbreak INIT_GLOBAL` or `dbreak *0x123abc`. When the given location is executed, gdb will stop and let you issue further commands, e.g. inspect variables or start single-stepping through the function. 
+* **dibreaks** Using this command you can list all currently active daedalus breakpoints. The mnemonic stands for 'daedalus-info-breakpoints'. 
+* **ddelete arg** Deletes a breakpoint. arg is either  the ID shown by `dibreaks` or an offset preceded by an asterisk (*). 
 * **dx arg** This command lets you examine the content of the variable arg by printing its value to the console. Only integer variables are supported by this command, but in future releases instances and strings will be available, too. Note that local variables have to be prefixed by the function name, e.g. 'dx INIT_GLOBAL.MYVAR'.
 * **dcurrentfunc** Prints the daedalus function that is currently being executed. When in bytecode that is outside the original codestack (i.e. generated at runtime), this will print [UNKNOWN].
 * **doption tokens arg** Sets the amount of tokens to be printed during stepping to arg (must be an integer). 
